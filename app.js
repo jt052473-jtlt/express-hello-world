@@ -7,15 +7,18 @@ app.use(cors());
 app.use(express.json());
 
 // Load API key from Render environment variable
-const genAI = new GoogleGenerativeAI(process.env.API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Chat endpoint
 app.post("/chat", async (req, res) => {
   try {
     const userMessage = req.body.message;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    if (!userMessage) {
+      return res.status(400).json({ error: "Message is required" });
+    }
 
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     const result = await model.generateContent(userMessage);
     const response = result.response.text();
 
@@ -24,6 +27,11 @@ app.post("/chat", async (req, res) => {
     console.error("Error:", error);
     res.status(500).json({ error: "Something went wrong." });
   }
+});
+
+// Root route
+app.get("/", (req, res) => {
+  res.send("Chatbot backend is running!");
 });
 
 // Start server
