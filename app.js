@@ -6,36 +6,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Load API key from Render environment variable
+// Load Gemini API key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Chat endpoint
-app.post("/chat", async (req, res) => {
-  try {
-    const userMessage = req.body.message;
-
-    if (!userMessage) {
-      return res.status(400).json({ error: "Message is required" });
-    }
-
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(userMessage);
-    const response = result.response.text();
-
-    res.json({ reply: response });
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).json({ error: "Something went wrong." });
-  }
-});
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 // Root route
 app.get("/", (req, res) => {
   res.send("Chatbot backend is running!");
 });
 
+// Chat route
+app.post("/chat", async (req, res) => {
+  try {
+    const userMessage = req.body.message;
+
+    if (!userMessage) {
+      return res.status(400).json({ reply: "No message received." });
+    }
+
+    const result = await model.generateContent(userMessage);
+    const reply = result.response.text();
+
+    res.json({ reply });
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).json({ reply: "Server error. Please try again." });
+  }
+});
+
 // Start server
-const port = process.env.PORT || 10000;
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
