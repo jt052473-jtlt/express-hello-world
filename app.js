@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 dotenv.config();
 
@@ -16,12 +17,11 @@ const port = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the EXACT directory where app.js lives
-app.use(express.static(__dirname));
-
+// INITIALIZE AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+// CHAT API
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -32,12 +32,35 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// FORCED ROUTE: This tells the server "When someone visits the home page, 
-// give them exactly this file."
+// AUTO-DETECT INDEX.HTML
 app.get("/", (req, res) => {
-  res.sendFile(path.resolve(__dirname, "index.html"));
+  // This function looks for index.html anywhere in your project
+  const findFile = (dir, fileName) => {
+    const files = fs.readdirSync(dir);
+    for (const file of files) {
+      const fullPath = path.join(dir, file);
+      if (fs.statSync(fullPath).isDirectory()) {
+        if (file !== 'node_modules') {
+          const found = findFile(fullPath, fileName);
+          if (found) return found;
+        }
+      } else if (file === fileName) {
+        return fullPath;
+      }
+    }
+    return null;
+  };
+
+  const indexPath = findFile(__dirname, "index.html");
+
+  if (indexPath) {
+    res.sendFile(indexPath);
+  } else {
+    const allRootFiles = fs.readdirSync(__dirname);
+    res.status(404).send(`Could not find index.html anywhere. Files in root: ${allRootFiles.join(", ")}`);
+  }
 });
 
 app.listen(port, "0.0.0.0", () => {
-  console.log(`✅ Chatbot is live and ready!`);
+  console.log(`✅ Server is searching for index.html and listening on ${port}`);
 });
