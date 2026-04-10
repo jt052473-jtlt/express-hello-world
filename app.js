@@ -6,27 +6,28 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 dotenv.config();
 
 const app = express();
-// Render dynamic port or default to 10000
 const port = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Initialize Gemini with the API Key from your Environment Variables
+// Initialize Gemini
+// Ensure GEMINI_API_KEY is set in your Render Environment variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// FIXED: Using 'gemini-1.5-flash-latest' to resolve the 404 error found in logs
+// STABLE MODEL NAME: Changed from 'gemini-1.5-flash-latest' to 'gemini-1.5-flash'
+// This fixes the 404 error appearing in your Render logs.
 const model = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-flash-latest" 
+  model: "gemini-1.5-flash" 
 });
 
-// Health check endpoint (This is what you see when you visit the URL)
+// Health check
 app.get("/", (req, res) => {
   res.send("Chatbot Backend is live and reaching Gemini ✅");
 });
 
-// Main Chat Endpoint
+// Chat endpoint
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -41,7 +42,7 @@ app.post("/chat", async (req, res) => {
 
     res.json({ reply: responseText });
   } catch (error) {
-    // This will print the specific error in your Render Logs if it fails again
+    // This logs the specific error to your Render dashboard
     console.error("Detailed Error in /chat:", error);
     res.status(500).json({ 
       error: "Failed to generate AI response",
@@ -50,6 +51,7 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+// Start server on 0.0.0.0 to ensure it's accessible on Render
 app.listen(port, "0.0.0.0", () => {
   console.log(`✅ Server is successfully running on port ${port}`);
 });
