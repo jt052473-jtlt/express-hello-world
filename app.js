@@ -13,30 +13,36 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 10000;
 
-// --- DIAGNOSTIC LOG ---
+// Diagnostic log to confirm your key is working
 console.log("Checking API Key...");
 if (process.env.GEMINI_API_KEY) {
     console.log("✅ API Key detected in Render environment.");
 } else {
     console.log("❌ ERROR: API Key NOT found. Check Render Environment tab!");
 }
-// ----------------------
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+// CHANGED: Using 'gemini-pro' for maximum compatibility with the current library
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
+    if (!message) return res.status(400).json({ reply: "No message sent." });
+
     const result = await model.generateContent(message);
     const response = await result.response;
-    res.json({ reply: response.text() });
+    const text = response.text();
+    
+    res.json({ reply: text });
   } catch (error) {
     console.error("Gemini Error:", error.message);
+    // This sends the actual error back to your chat screen so we can see it
     res.status(500).json({ reply: "Brain connection failed: " + error.message });
   }
 });
