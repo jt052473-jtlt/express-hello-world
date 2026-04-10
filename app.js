@@ -25,9 +25,9 @@ app.post("/chat", async (req, res) => {
       return res.status(500).json({ reply: "Missing API Key in Render settings." });
     }
 
-    // Direct Fetch to Google's STABLE v1 API (Bypassing v1beta)
+    // Using gemini-pro which is the most stable name across API versions
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,8 +43,13 @@ app.post("/chat", async (req, res) => {
       throw new Error(data.error.message);
     }
 
-    const aiText = data.candidates[0].content.parts[0].text;
-    res.json({ reply: aiText });
+    // Safety check for the response structure
+    if (data.candidates && data.candidates[0].content.parts[0].text) {
+        const aiText = data.candidates[0].content.parts[0].text;
+        res.json({ reply: aiText });
+    } else {
+        res.json({ reply: "The AI didn't return a text response. Try a different question." });
+    }
 
   } catch (error) {
     console.error("Gemini Error:", error.message);
