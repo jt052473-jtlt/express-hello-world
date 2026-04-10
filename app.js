@@ -25,10 +25,9 @@ app.post("/chat", async (req, res) => {
       return res.status(500).json({ reply: "Missing API Key in Render settings." });
     }
 
-    // Using the v1beta path with the standard flash name
-    // This is the most compatible version for Google AI Studio keys
+    // Using gemini-1.5-flash-8b - this often works when the standard version fails
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-8b:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -48,7 +47,7 @@ app.post("/chat", async (req, res) => {
         const aiText = data.candidates[0].content.parts[0].text;
         res.json({ reply: aiText });
     } else {
-        res.json({ reply: "The AI is stuck. Try asking something else!" });
+        res.json({ reply: "The AI was quiet. Try asking again!" });
     }
 
   } catch (error) {
