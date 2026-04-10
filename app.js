@@ -16,14 +16,14 @@ const port = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// 1. Serve static files from the root folder
+// 1. SERVE STATIC FILES
 app.use(express.static("."));
 
-// 2. Initialize Gemini (Using the stable model name)
+// 2. INITIALIZE GEMINI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// 3. The Chat API
+// 3. CHAT ENDPOINT
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -35,8 +35,8 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// 4. THE FIX: Catch-all route to force index.html to load
-app.get("*", (req, res) => {
+// 4. HOME ROUTE: Explicitly send the index.html file
+app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
 
