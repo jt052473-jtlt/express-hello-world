@@ -17,11 +17,13 @@ const port = process.env.PORT || 10000;
 app.use(cors());
 app.use(express.json());
 
-// INITIALIZE AI
+// 1. Serve static files from the root AND the mychatbot folder
+app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname, "mychatbot")));
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// CHAT API
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -32,35 +34,22 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// AUTO-DETECT INDEX.HTML
+// 2. The "Seek and Find" Home Route
 app.get("/", (req, res) => {
-  // This function looks for index.html anywhere in your project
-  const findFile = (dir, fileName) => {
-    const files = fs.readdirSync(dir);
-    for (const file of files) {
-      const fullPath = path.join(dir, file);
-      if (fs.statSync(fullPath).isDirectory()) {
-        if (file !== 'node_modules') {
-          const found = findFile(fullPath, fileName);
-          if (found) return found;
-        }
-      } else if (file === fileName) {
-        return fullPath;
-      }
+  const pathsToTry = [
+    path.join(__dirname, "index.html"),
+    path.join(__dirname, "mychatbot", "index.html")
+  ];
+
+  for (const p of pathsToTry) {
+    if (fs.existsSync(p)) {
+      return res.sendFile(p);
     }
-    return null;
-  };
-
-  const indexPath = findFile(__dirname, "index.html");
-
-  if (indexPath) {
-    res.sendFile(indexPath);
-  } else {
-    const allRootFiles = fs.readdirSync(__dirname);
-    res.status(404).send(`Could not find index.html anywhere. Files in root: ${allRootFiles.join(", ")}`);
   }
+
+  res.status(404).send("Server is live, but index.html is missing from the root and the mychatbot folder.");
 });
 
 app.listen(port, "0.0.0.0", () => {
-  console.log(`✅ Server is searching for index.html and listening on ${port}`);
+  console.log(`✅ Server is live on port ${port}`);
 });
