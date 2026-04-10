@@ -17,26 +17,29 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(__dirname));
 
-// Initialize Gemini with the API Key from your Render Environment
+// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// We are using 'gemini-1.5-flash' which is the current stable standard
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+// We are using the most stable model name available
+const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-flash" 
+});
 
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
-    if (!message) return res.status(400).json({ reply: "No message provided." });
+    if (!message) return res.status(400).json({ reply: "No message sent." });
 
-    // Generate response
+    // This specific sequence ensures we use the production 'v1' API
     const result = await model.generateContent(message);
-    const text = result.response.text();
+    const response = await result.response;
+    const text = response.text();
     
     res.json({ reply: text });
   } catch (error) {
     console.error("Gemini Error:", error.message);
-    // If it fails, it will tell us exactly why on the chat screen
-    res.status(500).json({ reply: "Connection Error: " + error.message });
+    // If it fails, the error will help us diagnose the last hurdle
+    res.status(500).json({ reply: "Brain Error: " + error.message });
   }
 });
 
