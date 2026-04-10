@@ -16,13 +16,14 @@ const port = process.env.PORT || 10000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static("."));
 
-// Initialize Gemini
+// Tell Express to serve files from the current folder
+app.use(express.static(__dirname));
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// Chat API
+// API Route for Chat
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -34,20 +35,21 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// HOME ROUTE with automatic file detection
+// Main Route to serve the Chatbot Interface
 app.get("/", (req, res) => {
-  const pathsToTry = [
-    path.join(__dirname, "index.html"),
-    path.join(__dirname, "public", "index.html")
-  ];
-
-  for (const p of pathsToTry) {
-    if (fs.existsSync(p)) {
-      return res.sendFile(p);
-    }
-  }
+  const indexPath = path.join(__dirname, "index.html");
   
-  res.status(404).send("Could not find index.html in root or public folder. Check your GitHub file names!");
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // If it fails, this will show a helpful message in the browser
+    const files = fs.readdirSync(__dirname);
+    res.status(404).send(`
+      <h1>File Not Found</h1>
+      <p>The server is looking for <b>index.html</b> but it is missing.</p>
+      <p><b>Files found in your GitHub repo:</b> ${files.join(", ")}</p>
+    `);
+  }
 });
 
 app.listen(port, "0.0.0.0", () => {
