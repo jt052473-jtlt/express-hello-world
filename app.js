@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 dotenv.config();
 
@@ -15,15 +16,13 @@ const port = process.env.PORT || 10000;
 
 app.use(cors());
 app.use(express.json());
-
-// 1. SERVE STATIC FILES
 app.use(express.static("."));
 
-// 2. INITIALIZE GEMINI
+// Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// 3. CHAT ENDPOINT
+// Chat API
 app.post("/chat", async (req, res) => {
   try {
     const { message } = req.body;
@@ -35,9 +34,20 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-// 4. HOME ROUTE: Explicitly send the index.html file
+// HOME ROUTE with automatic file detection
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  const pathsToTry = [
+    path.join(__dirname, "index.html"),
+    path.join(__dirname, "public", "index.html")
+  ];
+
+  for (const p of pathsToTry) {
+    if (fs.existsSync(p)) {
+      return res.sendFile(p);
+    }
+  }
+  
+  res.status(404).send("Could not find index.html in root or public folder. Check your GitHub file names!");
 });
 
 app.listen(port, "0.0.0.0", () => {
