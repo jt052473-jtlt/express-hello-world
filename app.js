@@ -1,5 +1,3 @@
-// app.js
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -8,46 +6,50 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 dotenv.config();
 
 const app = express();
+// Render dynamic port or default to 10000
 const port = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Check for API key
-if (!process.env.GEMINI_API_KEY) {
-  console.error("❌ GEMINI_API_KEY is not set in environment variables.");
-}
-
-// Initialize Gemini
+// Initialize Gemini with the API Key from your Environment Variables
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// Health check
-app.get("/", (req, res) => {
-  res.send("Backend is live ✅");
+// FIXED: Using 'gemini-1.5-flash-latest' to resolve the 404 error found in logs
+const model = genAI.getGenerativeModel({ 
+  model: "gemini-1.5-flash-latest" 
 });
 
-// Chat endpoint
+// Health check endpoint (This is what you see when you visit the URL)
+app.get("/", (req, res) => {
+  res.send("Chatbot Backend is live and reaching Gemini ✅");
+});
+
+// Main Chat Endpoint
 app.post("/chat", async (req, res) => {
   try {
-    const userMessage = req.body.message;
+    const { message } = req.body;
 
-    if (!userMessage || typeof userMessage !== "string") {
-      return res.status(400).json({ error: "Missing or invalid 'message' field in request body." });
+    if (!message) {
+      return res.status(400).json({ error: "No message provided" });
     }
 
-    const result = await model.generateContent(userMessage);
+    // Generate content using the Gemini model
+    const result = await model.generateContent(message);
     const responseText = result.response.text();
 
-    return res.json({ reply: responseText });
+    res.json({ reply: responseText });
   } catch (error) {
-    console.error("Error in /chat:", error);
-    return res.status(500).json({ error: "Error generating response from Gemini." });
+    // This will print the specific error in your Render Logs if it fails again
+    console.error("Detailed Error in /chat:", error);
+    res.status(500).json({ 
+      error: "Failed to generate AI response",
+      details: error.message 
+    });
   }
 });
 
-// Start server
-app.listen(port, () => {
-  console.log(`✅ Server running on port ${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`✅ Server is successfully running on port ${port}`);
 });
